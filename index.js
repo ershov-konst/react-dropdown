@@ -105,6 +105,44 @@ class Dropdown extends Component {
     return ops.length ? ops : <div className={`${baseClassName}-noresults`}>No options found</div>
   }
 
+  buildSelect(options){
+    return options.map((option) => {
+      if (option.type == 'group'){
+        return (
+           <optgroup label={option.name}>
+             {this.buildSelect(options.items)}
+           </optgroup>
+        );
+      }
+      else{
+        return <option value={option.value} key={option.value}>{option.label}</option>;
+      }
+    });
+  }
+
+  onChangeSelect(event){
+    this.setValue(this.findOption(event.target.value));
+  }
+
+  findOption(value){
+    function find(items){
+      let result;
+      for (let i = 0, l = items.length; i < l; i++){
+        if (items[i].type == 'group'){
+          result = find(items[i].items);
+          if (result){
+            return result;
+          }
+        }
+        else if (items[i].value == value){
+          return items[i];
+        }
+      }
+    }
+
+    return find(this.props.options);
+  }
+
   handleDocumentClick (event) {
     if (this.mounted) {
       if (!ReactDOM.findDOMNode(this).contains(event.target)) {
@@ -114,10 +152,11 @@ class Dropdown extends Component {
   }
 
   render () {
-    const { baseClassName } = this.props
+    const { baseClassName, nativeMenu } = this.props
     const placeHolderValue = typeof this.state.selected === 'string' ? this.state.selected : this.state.selected.label
     let value = (<div className={`${baseClassName}-placeholder`}>{placeHolderValue}</div>)
     let menu = this.state.isOpen ? <div className={`${baseClassName}-menu`}>{this.buildMenu()}</div> : null
+    let hiddenSelect = nativeMenu ? <select ref="native" className={`${baseClassName}-native`} onChange={this.onChangeSelect.bind(this)}>{this.buildSelect(this.props.options)}</select> : null;
 
     let dropdownClass = classNames({
       [`${baseClassName}-root`]: true,
@@ -131,11 +170,12 @@ class Dropdown extends Component {
           <span className={`${baseClassName}-arrow`} />
         </div>
         {menu}
+        {hiddenSelect}
       </div>
     )
   }
 
 }
 
-Dropdown.defaultProps = { baseClassName: 'Dropdown' }
+Dropdown.defaultProps = { baseClassName: 'Dropdown', nativeMenu: false }
 export default Dropdown
